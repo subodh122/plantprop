@@ -1,0 +1,11 @@
+{
+  "name": "PlantProp",
+  "description": "Identify plants from your camera and get expert propagation advice in seconds.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "Image recognition",
+    "Botanical AI"
+  ]
+}
