@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+node_modules/
+dist/
+coverage/
+*.log
+.env*
+!.env.example
