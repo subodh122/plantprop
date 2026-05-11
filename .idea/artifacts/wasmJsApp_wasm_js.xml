@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="wasmJsApp-wasm-js">
+    <output-path>$PROJECT_DIR$/wasmJsApp/build/libs</output-path>
+    <root id="archive" name="wasmJsApp-wasm-js.jar">
+      <element id="module-output" name="plantprop.wasmJsApp.wasmJsMain" />
+    </root>
+  </artifact>
+</component>
