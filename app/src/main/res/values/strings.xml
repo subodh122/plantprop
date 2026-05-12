@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">PlantProp</string>
+    <string name="botanical_guide">🌱 BOTANICAL GUIDE</string>
+    <string name="app_tagline">Discover and grow the urban forest.</string>
+    <string name="live_ai_title">Live AI Identification</string>
+    <string name="live_ai_subtitle">Scan any plant with your camera</string>
+    <string name="search_sf_title">Find Trees in San Francisco</string>
+    <string name="search_sf_subtitle">Search the SF street tree database</string>
+    <string name="nearby_trees_title">Trees Around Me</string>
+    <string name="nearby_trees_subtitle">Use live GPS for nearby specimens</string>
+    <string name="view_garden">VIEW SAVED GARDEN</string>
 </resources>

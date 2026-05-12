@@ -2,20 +2,24 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.secretsPlugin)
 }
 
 android {
-    namespace = "com.example.plantprop"
+    namespace = "com.subodhsonar.plantprop"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.plantprop"
+        applicationId = "com.subodhsonar.plantprop"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyBdv9NzCtfp7bsVAewKVftgh6iAlN6y43A\"")
+        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyBdv9NzCtfp7bsVAewKVftgh6iAlN6y43A"
     }
 
     buildTypes {
@@ -36,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

@@ -19,7 +19,7 @@
         android:theme="@style/Theme.Plantprop">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.subodhsonar.plantprop.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Plantprop">
             <intent-filter>
@@ -30,7 +30,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBdv9NzCtfp7bsVAewKVftgh6iAlN6y43A" />
+            android:value="${MAPS_API_KEY}" />
 
     </application>
 
