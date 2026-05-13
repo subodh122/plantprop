@@ -6,7 +6,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -26,6 +28,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.size.Precision
+import coil3.size.Scale
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import com.subodhsonar.plantprop.AppView
 import com.subodhsonar.plantprop.MainViewModel
 import com.subodhsonar.plantprop.model.PropagationStep
@@ -59,7 +67,7 @@ fun TreeDetailScreen(viewModel: MainViewModel) {
                         modifier = Modifier.weight(1f)
                     )
                     IconButton(
-                        onClick = { viewModel.reset() },
+                        onClick = { viewModel.setView(AppView.TreeSearch) },
                         modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
                     ) {
                         Icon(Icons.Default.Search, contentDescription = "Search Trees", tint = Color.White, modifier = Modifier.size(20.dp))
@@ -119,12 +127,24 @@ fun TreeDetailScreen(viewModel: MainViewModel) {
                             CircularProgressIndicator(color = Color(0xFF22C55E))
                         } else {
                             val imageModel = remember(wikiInfo?.thumbnailUrl) {
-                                wikiInfo?.thumbnailUrl?.takeIf { it.isNotEmpty() } 
-                                    ?: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=1200"
+                                if (!wikiInfo?.thumbnailUrl.isNullOrEmpty()) {
+                                    wikiInfo!!.thumbnailUrl!!
+                                } else {
+                                    "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=1200"
+                                }
                             }
                             
                             AsyncImage(
-                                model = imageModel,
+                                model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                    .data(imageModel)
+                                    .httpHeaders(NetworkHeaders.Builder()
+                                        .set("User-Agent", "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36")
+                                        .set("Referer", "https://commons.wikimedia.org/")
+                                        .build())
+                                    .precision(Precision.EXACT)
+                                    .scale(Scale.FILL)
+                                    .crossfade(true)
+                                    .build(),
                                 contentDescription = tree.commonName,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
@@ -206,6 +226,40 @@ fun TreeDetailScreen(viewModel: MainViewModel) {
                         textAlign = TextAlign.Center,
                         color = Color.Gray,
                         style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Botanical Research Links
+                    Text("Research Resources", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Explore external scientific databases for this species", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ResearchLinkItem(
+                        title = "USDA Plants Database",
+                        description = "Detailed profiles, distribution maps, and legal status.",
+                        onClick = { 
+                            val encoded = tree.scientificName.replace(" ", "+")
+                            viewModel.openBrowser("https://plants.sc.egov.usda.gov/home/basicSearch?q=$encoded")
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ResearchLinkItem(
+                        title = "iNaturalist Observations",
+                        description = "Real-world sightings and community identifications.",
+                        onClick = { 
+                            val encoded = tree.scientificName.replace(" ", "+")
+                            viewModel.openBrowser("https://www.inaturalist.org/search?q=$encoded") 
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ResearchLinkItem(
+                        title = "Kew World Checklist",
+                        description = "The definitive international database of plant species.",
+                        onClick = { 
+                            val encoded = tree.scientificName.replace(" ", "+")
+                            viewModel.openBrowser("https://powo.science.kew.org/results?q=$encoded") 
+                        }
                     )
                     
                     Spacer(modifier = Modifier.height(64.dp).navigationBarsPadding())

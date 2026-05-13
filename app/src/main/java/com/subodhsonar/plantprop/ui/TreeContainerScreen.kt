@@ -37,7 +37,7 @@ fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
                             .padding(horizontal = 8.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { viewModel.reset() }) {
+                        IconButton(onClick = { viewModel.setView(AppView.Landing) }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                         }
                         Text(

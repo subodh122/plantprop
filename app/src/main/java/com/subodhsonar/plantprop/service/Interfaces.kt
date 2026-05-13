@@ -4,7 +4,7 @@ import com.subodhsonar.plantprop.model.*
 
 interface IBotanyService {
     suspend fun analyzePlant(imageBytes: ByteArray): PlantAnalysis
-    suspend fun getInfoByName(name: String): PlantAnalysis
+    suspend fun getInfoByName(scientificName: String): PlantAnalysis
 }
 
 interface IStorageManager {

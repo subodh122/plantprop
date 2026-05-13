@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -146,27 +147,39 @@ class MainViewModel(
         
         viewModelScope.launch {
             try {
-                // Try to find the best image and info
-                val info = wikiService.getTreeInfo(treeDistance.tree.scientificName) ?: 
-                          wikiService.getTreeInfo(treeDistance.tree.commonName)
-                
-                _wikiInfo.value = info
-                
-                // If we have no image, try one last AI research attempt
-                if (info?.thumbnailUrl == null) {
+                // 1. Fetch AI info and Image URL in parallel
+                val aiInfoDeferred = async { 
                     try {
-                        val aiInfo = botanyService.getInfoByName(treeDistance.tree.scientificName)
-                        _wikiInfo.value = WikiInfo(
-                            title = aiInfo.commonName,
-                            extract = aiInfo.summary,
-                            thumbnailUrl = "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=1200",
-                            propagationSteps = aiInfo.propagationSteps
-                        )
-                    } catch (e: Exception) {
-                        // Keep whatever we got from wiki
-                    }
+                        botanyService.getInfoByName(treeDistance.tree.scientificName)
+                    } catch (e: Exception) { null }
                 }
-                _currentView.value = AppView.TreeDetail
+                
+                val wikiImgDeferred = async {
+                    // Force a deep search for the image before moving to the next screen
+                    wikiService.fetchPlantImage(treeDistance.tree.scientificName, treeDistance.tree.commonName)
+                }
+
+                val aiInfoResult = aiInfoDeferred.await()
+                val wikiImg = wikiImgDeferred.await()
+                
+                // We only navigate once we have at least tried to fetch the image and info
+                // If AI fails but we have an image, we still show the screen with fallback info
+                // If we have neither, we'll show a generic error rather than a blank screen
+                
+                if (aiInfoResult != null || wikiImg != null) {
+                    _wikiInfo.value = WikiInfo(
+                        title = aiInfoResult?.commonName ?: treeDistance.tree.commonName,
+                        extract = aiInfoResult?.summary ?: "Botany information for ${treeDistance.tree.scientificName} is being researched.",
+                        thumbnailUrl = wikiImg ?: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=1200",
+                        propagationSteps = aiInfoResult?.propagationSteps ?: defaultPropagationSteps(treeDistance.tree.commonName)
+                    )
+                    _currentView.value = AppView.TreeDetail
+                } else {
+                    _error.value = "Unable to find botanical records or images for this specimen."
+                }
+                
+            } catch (e: Exception) {
+                _error.value = "An error occurred while loading tree details."
             } finally {
                 _isProcessing.value = false
             }
@@ -200,6 +213,10 @@ class MainViewModel(
         navigator.openBrowser("https://en.wikipedia.org/wiki/$scientificName")
     }
 
+    fun openBrowser(url: String) {
+        navigator.openBrowser(url)
+    }
+
     fun handleCapture(imageBytes: ByteArray) {
         _isAnalyzing.value = true
         _isProcessing.value = true
@@ -210,18 +227,17 @@ class MainViewModel(
         
         viewModelScope.launch {
             try {
+                // Identify and get clean botanical info in one go
                 val result = botanyService.analyzePlant(imageBytes)
                 _analysisResult.value = result
-                
-                var img = wikiService.fetchPlantImage(result.scientificName)
-                if (img == null) {
-                    img = wikiService.fetchPlantImage(result.commonName)
-                }
-                _referenceImageUrl.value = img
                 _currentView.value = AppView.Results
                 
+                // Fetch high-quality reference image in background after navigating
+                val img = wikiService.fetchPlantImage(result.scientificName, result.commonName)
+                _referenceImageUrl.value = img
+                
             } catch (e: Exception) {
-                _error.value = e.message ?: "An unexpected error occurred"
+                _error.value = e.message ?: "An unexpected error occurred during analysis."
                 _currentView.value = AppView.Results
             } finally { 
                 _isAnalyzing.value = false
@@ -259,8 +275,7 @@ class MainViewModel(
         _analysisResult.value = PlantAnalysis(plant.commonName, plant.scientificName, plant.confidence, plant.summary, plant.propagationSteps, plant.tips)
         _currentView.value = AppView.Results
         viewModelScope.launch {
-            _referenceImageUrl.value = wikiService.fetchPlantImage(plant.scientificName) ?: 
-                                     wikiService.fetchPlantImage(plant.commonName)
+            _referenceImageUrl.value = wikiService.fetchPlantImage(plant.scientificName, plant.commonName)
         }
     }
 
@@ -277,4 +292,10 @@ class MainViewModel(
         _closestTrees.value = emptyList()
         _currentView.value = AppView.Landing
     }
+
+    private fun defaultPropagationSteps(name: String) = listOf(
+        PropagationStep("Sourcing Cuttings", "Identify a healthy, disease-free parent $name. Take a 5- to 7-inch cutting from a semi-hardwood branch during the active growing season."),
+        PropagationStep("Preparation", "Strip away the leaves from the bottom half of the cutting to prevent rot. Optionally, dip the bottom 1 inch of the stem into a rooting hormone."),
+        PropagationStep("Setting & Humidity", "Insert into a moist, sterile rooting medium. Keep in a bright spot with indirect light and maintain humidity.")
+    )
 }

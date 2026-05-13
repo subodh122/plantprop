@@ -27,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.Precision
+import coil3.size.Scale
 import com.subodhsonar.plantprop.AppView
 import com.subodhsonar.plantprop.MainViewModel
 
@@ -47,7 +50,7 @@ fun GardenScreen(viewModel: MainViewModel) {
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { viewModel.reset() }) {
+                    IconButton(onClick = { viewModel.setView(AppView.Landing) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                     Text(
@@ -96,7 +99,11 @@ fun GardenScreen(viewModel: MainViewModel) {
                                 .clickable { viewModel.openGardenPlant(plant) }
                         ) {
                             AsyncImage(
-                                model = plant.imagePath,
+                                model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                    .data(plant.imagePath)
+                                    .precision(Precision.EXACT)
+                                    .scale(Scale.FILL)
+                                    .build(),
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -144,7 +151,7 @@ fun GardenScreen(viewModel: MainViewModel) {
             }
 
             Button(
-                onClick = { viewModel.reset() },
+                onClick = { viewModel.setView(AppView.Camera) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()

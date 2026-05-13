@@ -17,9 +17,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyBdv9NzCtfp7bsVAewKVftgh6iAlN6y43A\"")
-        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyBdv9NzCtfp7bsVAewKVftgh6iAlN6y43A"
     }
 
     buildTypes {
@@ -44,6 +41,18 @@ android {
     }
 }
 
+secrets {
+    // Optionally specify a different file name containing your secrets.
+    // The plugin defaults to "local.properties"
+    propertiesFileName = "local.properties"
+
+    // A properties file, such as "local.properties", could be checked into
+    // version control because it contains information specific to your local
+    // configuration. To prevent this, you can add it to your .gitignore file.
+    ignoreList.add("keyToIgnore") // Ignore the key "keyToIgnore"
+    ignoreList.add("sdk.*")       // Ignore all keys matching the regexp "sdk.*"
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -61,6 +70,8 @@ dependencies {
     implementation(group = "com.google.android.gms", name = "play-services-base", version = "18.5.0")
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinx.coroutines.core)
+
+    implementation(libs.generativeai)
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)

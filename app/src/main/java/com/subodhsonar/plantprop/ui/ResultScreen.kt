@@ -6,8 +6,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -31,7 +33,13 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.size.Precision
+import coil3.size.Scale
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import com.subodhsonar.plantprop.MainViewModel
+import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ResultScreen(viewModel: MainViewModel) {
@@ -52,7 +60,7 @@ fun ResultScreen(viewModel: MainViewModel) {
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { viewModel.reset() }) {
+                    IconButton(onClick = { viewModel.setView(AppView.Camera) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                     Text(
@@ -118,7 +126,7 @@ fun ResultScreen(viewModel: MainViewModel) {
                             color = Color(0xFF22C55E),
                             fontStyle = FontStyle.Italic
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Surface(
@@ -160,6 +168,40 @@ fun ResultScreen(viewModel: MainViewModel) {
                             lineHeight = 22.sp,
                             style = MaterialTheme.typography.bodyMedium
                         )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Botanical Research Links
+                        Text("Research Resources", style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Explore external scientific databases for this species", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        ResearchLinkItem(
+                            title = "USDA Plants Database",
+                            description = "Detailed profiles, distribution maps, and legal status.",
+                            onClick = { 
+                                val encoded = res.scientificName.replace(" ", "+")
+                                viewModel.openBrowser("https://plants.sc.egov.usda.gov/home/basicSearch?q=$encoded")
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ResearchLinkItem(
+                            title = "iNaturalist Observations",
+                            description = "Real-world sightings and community identifications.",
+                            onClick = { 
+                                val encoded = res.scientificName.replace(" ", "+")
+                                viewModel.openBrowser("https://www.inaturalist.org/search?q=$encoded") 
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ResearchLinkItem(
+                            title = "Kew World Checklist",
+                            description = "The definitive international database of plant species.",
+                            onClick = { 
+                                val encoded = res.scientificName.replace(" ", "+")
+                                viewModel.openBrowser("https://powo.science.kew.org/results?q=$encoded") 
+                            }
+                        )
                     }
                 }
             }
@@ -176,7 +218,10 @@ fun ResultScreen(viewModel: MainViewModel) {
                     Button(
                         onClick = { viewModel.saveToGarden() },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.1f))
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.1f),
+                            contentColor = Color.White
+                        )
                     ) {
                         Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFF22C55E))
                         Spacer(Modifier.width(8.dp))
@@ -184,7 +229,7 @@ fun ResultScreen(viewModel: MainViewModel) {
                     }
                 }
                 Button(
-                    onClick = { viewModel.reset() },
+                    onClick = { viewModel.setView(AppView.Camera) },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
                 ) {
@@ -205,24 +250,6 @@ fun PlantImageGallery(
     referenceUrl: String?,
     isAnalyzing: Boolean
 ) {
-    if (referenceUrl == null && !isAnalyzing) {
-        Box(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-        ) {
-            if (gardenImagePath != null) {
-                AsyncImage(model = gardenImagePath, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            } else if (capturedImageBytes != null) {
-                AsyncImage(model = capturedImageBytes, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            }
-        }
-        return
-    }
-
     Column(modifier = Modifier.padding(16.dp)) {
         Row(
             modifier = Modifier
@@ -230,6 +257,7 @@ fun PlantImageGallery(
                 .height(260.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Capture Box
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -238,10 +266,19 @@ fun PlantImageGallery(
                     .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                     .background(Color.White.copy(alpha = 0.05f))
             ) {
-                if (gardenImagePath != null) {
-                    AsyncImage(model = gardenImagePath, contentDescription = "Your Photo", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                } else if (capturedImageBytes != null) {
-                    AsyncImage(model = capturedImageBytes, contentDescription = "Your Photo", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                val model = gardenImagePath ?: capturedImageBytes
+                if (model != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(model)
+                            .precision(Precision.EXACT)
+                            .scale(Scale.FILL)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Your Photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
                 
                 Surface(color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(topStart = 12.dp), modifier = Modifier.align(Alignment.BottomEnd)) {
@@ -249,6 +286,7 @@ fun PlantImageGallery(
                 }
             }
 
+            // Reference Box
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -258,14 +296,52 @@ fun PlantImageGallery(
                     .background(Color.White.copy(alpha = 0.05f)),
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model = referenceUrl ?: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?q=80&w=1200",
-                    contentDescription = "Reference Photo",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Surface(color = Color(0xFF22C55E).copy(alpha = 0.9f), shape = RoundedCornerShape(topStart = 12.dp), modifier = Modifier.align(Alignment.BottomEnd)) {
-                    Text("REFERENCE", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = Color.Black, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                if (referenceUrl == null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color(0xFF22C55E),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Finding photo...",
+                            color = Color.White.copy(alpha = 0.5f),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 8.sp
+                        )
+                    }
+                } else {
+                    Log.d("PlantImageGallery", "Displaying reference URL: $referenceUrl")
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(referenceUrl)
+                            .httpHeaders(NetworkHeaders.Builder()
+                                .set("User-Agent", "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36")
+                                .set("Referer", "https://commons.wikimedia.org/")
+                                .build())
+                            .precision(Precision.EXACT)
+                            .scale(Scale.FILL)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Reference Photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        onState = { state ->
+                            when (state) {
+                                is coil3.compose.AsyncImagePainter.State.Error -> {
+                                    Log.e("PlantImageGallery", "Error loading image: $referenceUrl", state.result.throwable)
+                                }
+                                is coil3.compose.AsyncImagePainter.State.Success -> {
+                                    Log.d("PlantImageGallery", "Successfully loaded image: $referenceUrl")
+                                }
+                                else -> {}
+                            }
+                        }
+                    )
+                    Surface(color = Color(0xFF22C55E).copy(alpha = 0.9f), shape = RoundedCornerShape(topStart = 12.dp), modifier = Modifier.align(Alignment.BottomEnd)) {
+                        Text("REFERENCE", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = Color.Black, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 9.sp)
+                    }
                 }
             }
         }

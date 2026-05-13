@@ -50,11 +50,6 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        "Fetching high-res reference photos",
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
                 }
             }
         }

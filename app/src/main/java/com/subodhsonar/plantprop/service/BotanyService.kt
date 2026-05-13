@@ -5,6 +5,7 @@ import android.util.Log
 import com.subodhsonar.plantprop.model.PlantAnalysis
 import com.subodhsonar.plantprop.model.PropagationStep
 import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -13,132 +14,157 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-class BotanyService(private val apiKey: String) : IBotanyService {
-    private val client = HttpClient()
+/**
+ * BotanyService - REWRITTEN - 2026-05-15
+ * Optimized for Gemini 3.1 Flash Lite via OpenRouter.
+ */
+class BotanyService(apiKey: String) : IBotanyService {
+    private val apiKey = apiKey.trim()
+    private val client = HttpClient {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60000 
+            connectTimeoutMillis = 60000
+            socketTimeoutMillis = 60000
+        }
+    }
     private val TAG = "BotanyService"
+    private val MODEL_ID = "google/gemini-3.1-flash-lite"
 
     override suspend fun analyzePlant(imageBytes: ByteArray): PlantAnalysis = withContext(Dispatchers.IO) {
         val base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
         
         val prompt = """
-            Analyze this image of a plant or tree. Identify the plant (common and scientific name) and provide comprehensive propagation information. 
-
-            Return your response as a JSON object with this exact structure:
-            {
-              "commonName": "string",
-              "scientificName": "string",
-              "confidence": number,
-              "summary": "string",
-              "propagationSteps": [
-                { "title": "Step title", "description": "detailed description" }
-              ],
-              "tips": "string"
-            }
-            Provide at least 3-5 detailed propagation steps.
-        """.trimIndent()
-
-        val requestBody = JSONObject().apply {
-            put("contents", JSONArray().put(JSONObject().apply {
-                put("parts", JSONArray().apply {
-                    put(JSONObject().put("text", prompt))
-                    put(JSONObject().put("inline_data", JSONObject().apply {
-                        put("mime_type", "image/jpeg")
-                        put("data", base64Image)
-                    }))
-                })
-            }))
-        }
-
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
-        
-        Log.d(TAG, "Calling Gemini API: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent")
-        
-        val response = client.post(url) {
-            contentType(ContentType.Application.Json)
-            setBody(requestBody.toString())
-        }
-
-        if (response.status != HttpStatusCode.OK) {
-            val errorBody = response.bodyAsText()
-            Log.e(TAG, "Gemini Error: $errorBody")
-            throw Exception("Gemini API Error (${response.status}): $errorBody")
-        }
-
-        val responseText = response.bodyAsText()
-        return@withContext parseGeminiResponse(responseText)
-    }
-
-    override suspend fun getInfoByName(name: String): PlantAnalysis = withContext(Dispatchers.IO) {
-        val prompt = """
-            Provide professional botanical information for the plant: $name.
-            Identify its common name and scientific name accurately.
-            Focus on its unique characteristics and provide very elaborate, detailed, step-by-step instructions on how to propagate it successfully (mentioning timing, soil type, hormone use, and environment).
+            Identify the plant in this image with high precision.
+            Analyze the leaf shape, color, pattern, and stem structure.
             
-            Return your response as a JSON object with this exact structure:
+            Return a JSON object:
             {
-              "commonName": "string",
-              "scientificName": "string",
-              "confidence": 1.0,
-              "summary": "string",
+              "commonName": "Primary common name",
+              "scientificName": "Binomial scientific name",
+              "confidence": 0.0 to 1.0,
+              "summary": "Professional botanical description (6-8 sentences).",
               "propagationSteps": [
-                { "title": "Step title", "description": "detailed description" }
+                { "title": "Step title", "description": "detailed instructions" }
               ],
-              "tips": "string"
+              "tips": "Expert horticultural tips."
             }
-            Provide at least 3-5 detailed propagation steps.
+            Ensure the response is ONLY the JSON object.
         """.trimIndent()
 
         val requestBody = JSONObject().apply {
-            put("contents", JSONArray().put(JSONObject().apply {
-                put("parts", JSONArray().put(JSONObject().put("text", prompt)))
-            }))
+            put("model", MODEL_ID)
+            put("messages", JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", JSONArray().apply {
+                        put(JSONObject().put("type", "text").put("text", prompt))
+                        put(JSONObject().apply {
+                            put("type", "image_url")
+                            put("image_url", JSONObject().put("url", "data:image/jpeg;base64,$base64Image"))
+                        })
+                    })
+                })
+            })
+            put("response_format", JSONObject().put("type", "json_object"))
         }
+        executeOpenRouter(requestBody)
+    }
 
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
-        
-        val response = client.post(url) {
-            contentType(ContentType.Application.Json)
-            setBody(requestBody.toString())
+    override suspend fun getInfoByName(scientificName: String): PlantAnalysis = withContext(Dispatchers.IO) {
+        val prompt = "Provide botanical info for: $scientificName. Return ONLY a JSON object with keys: commonName, scientificName, confidence, summary, propagationSteps (with title and description), and tips."
+
+        val requestBody = JSONObject().apply {
+            put("model", MODEL_ID)
+            put("messages", JSONArray().put(JSONObject().apply {
+                put("role", "user")
+                put("content", prompt)
+            }))
+            put("response_format", JSONObject().put("type", "json_object"))
+        }
+        executeOpenRouter(requestBody)
+    }
+
+    private suspend fun executeOpenRouter(requestBody: JSONObject): PlantAnalysis {
+        val url = "https://openrouter.ai/api/v1/chat/completions"
+        val response = try {
+            client.post(url) {
+                header(HttpHeaders.Authorization, "Bearer $apiKey")
+                header("HTTP-Referer", "https://subodhsonar.com/plantprop")
+                header("X-Title", "PlantProp")
+                contentType(ContentType.Application.Json)
+                setBody(requestBody.toString())
+            }
+        } catch (e: Exception) {
+            throw Exception("Network Error: ${e.message}")
         }
 
         if (response.status != HttpStatusCode.OK) {
             val errorBody = response.bodyAsText()
-            Log.e(TAG, "Gemini Error: $errorBody")
-            throw Exception("Gemini API Error: ${response.status}")
+            Log.e(TAG, "OpenRouter Error: ${response.status} - $errorBody")
+            throw Exception("AI Service Error (${response.status})")
         }
 
-        val responseText = response.bodyAsText()
-        return@withContext parseGeminiResponse(responseText)
+        val responseBody = response.bodyAsText()
+        val root = JSONObject(responseBody)
+        val content = root.getJSONArray("choices")
+            .getJSONObject(0)
+            .getJSONObject("message")
+            .getString("content")
+            
+        val usageObj = root.optJSONObject("usage")
+        val usage = usageObj?.let {
+            com.subodhsonar.plantprop.model.TokenUsage(
+                promptTokens = it.optInt("prompt_tokens"),
+                completionTokens = it.optInt("completion_tokens"),
+                reasoningTokens = it.optInt("reasoning_tokens", 0),
+                totalTokens = it.optInt("total_tokens")
+            )
+        }
+            
+        return parseJsonResponse(content, usage)
     }
 
-    private fun parseGeminiResponse(responseText: String): PlantAnalysis {
-        val root = JSONObject(responseText)
-        val candidate = root.getJSONArray("candidates").getJSONObject(0)
-        val text = candidate.getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
-        
-        val jsonStart = text.indexOf('{')
-        val jsonEnd = text.lastIndexOf('}')
-        if (jsonStart == -1 || jsonEnd == -1) throw Exception("Invalid AI Response Text")
-        val jsonString = text.substring(jsonStart, jsonEnd + 1)
-        
-        val obj = JSONObject(jsonString)
-        val stepsArray = obj.getJSONArray("propagationSteps")
-        val steps = mutableListOf<PropagationStep>()
-        for (i in 0 until stepsArray.length()) {
-            val stepObj = stepsArray.getJSONObject(i)
-            steps.add(PropagationStep(
-                stepObj.getString("title"),
-                stepObj.getString("description")
-            ))
+    private fun parseJsonResponse(jsonString: String, usage: com.subodhsonar.plantprop.model.TokenUsage? = null): PlantAnalysis {
+        try {
+            // Log the incoming content for debugging
+            Log.d(TAG, "Parsing AI Response: ${jsonString.take(100)}...")
+
+            // 1. Remove markdown code blocks if present (```json ... ```)
+            val cleaned = jsonString
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+
+            // 2. Find the JSON object using a more robust regex that finds the first '{' and last '}'
+            val firstBrace = cleaned.indexOf('{')
+            val lastBrace = cleaned.lastIndexOf('}')
+            
+            if (firstBrace == -1 || lastBrace == -1 || lastBrace < firstBrace) {
+                Log.e(TAG, "Malformed content (no braces found): $jsonString")
+                throw Exception("Invalid data format returned by AI.")
+            }
+            
+            val cleanJson = cleaned.substring(firstBrace, lastBrace + 1)
+            val obj = JSONObject(cleanJson)
+            
+            val stepsArray = obj.optJSONArray("propagationSteps") ?: JSONArray()
+            val steps = List(stepsArray.length()) { i ->
+                val s = stepsArray.getJSONObject(i)
+                PropagationStep(s.optString("title", "Step ${i+1}"), s.optString("description", ""))
+            }
+            
+            return PlantAnalysis(
+                commonName = obj.optString("commonName", "Unknown Plant"),
+                scientificName = obj.optString("scientificName", "Species unknown"),
+                confidence = obj.optDouble("confidence", 1.0),
+                summary = obj.optString("summary", "Botanical description unavailable."),
+                propagationSteps = steps,
+                tips = obj.optString("tips", ""),
+                usage = usage
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Parsing error: ${e.message}. Raw content: $jsonString")
+            throw Exception("Invalid data format returned by AI.")
         }
-        
-        return PlantAnalysis(
-            commonName = obj.getString("commonName"),
-            scientificName = obj.getString("scientificName"),
-            confidence = obj.optDouble("confidence", 1.0),
-            summary = obj.getString("summary"),
-            propagationSteps = steps,
-            tips = obj.getString("tips")
-        )
     }
 }

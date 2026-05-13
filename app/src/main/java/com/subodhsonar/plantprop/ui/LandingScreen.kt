@@ -27,6 +27,9 @@ import androidx.core.content.ContextCompat
 import androidx.compose.ui.res.stringResource
 import com.subodhsonar.plantprop.R
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.Precision
+import coil3.size.Scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ColorFilter
@@ -65,7 +68,11 @@ fun LandingScreen(viewModel: MainViewModel) {
             .background(backgroundBrush)
     ) {
         AsyncImage(
-            model = "https://images.unsplash.com/photo-1510133769068-070830704423?q=80&w=1200", 
+            model = ImageRequest.Builder(LocalContext.current)
+                .data("https://images.unsplash.com/photo-1510133769068-070830704423?q=80&w=1200")
+                .precision(Precision.EXACT)
+                .scale(Scale.FILL)
+                .build(),
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()

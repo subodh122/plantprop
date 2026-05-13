@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -80,13 +81,20 @@ fun CameraScreen(viewModel: MainViewModel) {
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(
+                onClick = { viewModel.setView(AppView.Landing) },
+                modifier = Modifier.background(Color.White.copy(alpha = 0.2f), CircleShape)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "PlantProp Pro",
+                text = "PlantProp",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                color = Color.White,
+                modifier = Modifier.weight(1f)
             )
             IconButton(
                 onClick = { viewModel.setView(AppView.TreeSearch) },
@@ -94,6 +102,7 @@ fun CameraScreen(viewModel: MainViewModel) {
             ) {
                 Icon(Icons.Default.Search, contentDescription = "Search Trees", tint = Color.White)
             }
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = { viewModel.setView(AppView.Garden) },
                 modifier = Modifier.background(Color.White.copy(alpha = 0.2f), CircleShape)

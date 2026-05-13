@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
             botanyService = botanyService,
             storageManager = AndroidStorageManager(this),
             treeService = AndroidTreeService(this),
-            wikiService = WikipediaService(),
+            wikiService = WikipediaService(apiKey = BuildConfig.GEMINI_API_KEY),
             navigator = AndroidNavigator(this)
         )
         
