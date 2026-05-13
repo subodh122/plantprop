@@ -184,6 +184,19 @@ fun LandingScreen(viewModel: MainViewModel) {
                     letterSpacing = 1.5.sp
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { viewModel.openBrowser("https://github.com/subodh122/plantprop/blob/main/PRIVACY_POLICY.md") },
+                colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.4f))
+            ) {
+                Text(
+                    text = "Privacy Policy",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
         }
     }
 }
