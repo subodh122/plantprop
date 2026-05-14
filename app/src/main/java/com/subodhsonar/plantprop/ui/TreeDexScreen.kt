@@ -1,6 +1,7 @@
 package com.subodhsonar.plantprop.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -43,7 +44,7 @@ fun TreeDexScreen(viewModel: MainViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { viewModel.setView(AppView.Landing) }) {
-                        Icon(androidx.compose.material.icons.automirrored.filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                     Text(
                         text = "SF TreeDex",
@@ -55,7 +56,7 @@ fun TreeDexScreen(viewModel: MainViewModel) {
                         onClick = { viewModel.setView(AppView.Garden) },
                         modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
                     ) {
-                        Icon(androidx.compose.material.icons.automirrored.filled.List, contentDescription = "Garden", tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Garden", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -140,19 +141,37 @@ fun TreeDexScreenContent(viewModel: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-            items(treeDex) { entry ->
-                DexItem(entry)
+            val sortedTreeDex = treeDex.sortedWith(
+                compareByDescending<DexEntry> { it.isCollected }
+                    .thenBy { it.commonName }
+            )
+            items(sortedTreeDex) { entry ->
+                DexItem(entry) {
+                    if (entry.isCollected) {
+                        val gardenPlant = viewModel.garden.value.find { 
+                            it.scientificName.lowercase() == entry.scientificName.lowercase() || 
+                            it.commonName.lowercase() == entry.commonName.lowercase() 
+                        }
+                        if (gardenPlant != null) {
+                            viewModel.openGardenPlant(gardenPlant)
+                        } else {
+                            viewModel.setView(AppView.Garden)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun DexItem(entry: DexEntry) {
+fun DexItem(entry: DexEntry, onClick: () -> Unit) {
     Surface(
         color = if (entry.isCollected) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.02f),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.aspectRatio(0.85f)
+        modifier = Modifier
+            .aspectRatio(0.85f)
+            .clickable(enabled = entry.isCollected) { onClick() }
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
