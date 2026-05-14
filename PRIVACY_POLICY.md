@@ -18,4 +18,4 @@ Your Consent
 By using the app you agree to the use of camera and location permissions for these features.
 
 Contact
-For questions contact us at support@example.com
+For questions contact us at sds.powai@gmail.com
