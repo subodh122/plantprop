@@ -36,6 +36,9 @@ class MainViewModel(
     private val _currentView = MutableStateFlow<AppView>(AppView.Landing)
     val currentView: StateFlow<AppView> = _currentView
 
+    private val _selectedExplorerTab = MutableStateFlow(0)
+    val selectedExplorerTab: StateFlow<Int> = _selectedExplorerTab
+
     private val _topPropagatable = MutableStateFlow<List<TreeDistance>>(emptyList())
     val topPropagatable: StateFlow<List<TreeDistance>> = _topPropagatable
 
@@ -69,10 +72,31 @@ class MainViewModel(
         viewModelScope.launch {
             try {
                 allStreetTrees = treeService.loadTreesFromAssets()
+                updateDex()
             } finally {
                 _isTreesLoading.value = false
             }
         }
+    }
+
+    private fun updateDex() {
+        val collectedNames = _garden.value.map { it.scientificName.lowercase() }.toSet()
+        val uniqueSpecies = allStreetTrees
+            .distinctBy { it.scientificName.lowercase() }
+            .filter { it.scientificName.isNotEmpty() }
+            .map { tree ->
+                val isCollected = tree.scientificName.lowercase() in collectedNames
+                DexEntry(
+                    scientificName = tree.scientificName,
+                    commonName = tree.commonName,
+                    isCollected = isCollected,
+                    count = _garden.value.count { it.scientificName.lowercase() == tree.scientificName.lowercase() },
+                    firstCollectedDate = _garden.value.find { it.scientificName.lowercase() == tree.scientificName.lowercase() }?.date
+                )
+            }
+            .sortedBy { it.commonName }
+        
+        _treeDex.value = uniqueSpecies
     }
 
     fun onAddressQueryChange(query: String) {
@@ -201,8 +225,15 @@ class MainViewModel(
     private val _selectedGardenPlant = MutableStateFlow<SavedPlant?>(null)
     val selectedGardenPlant: StateFlow<SavedPlant?> = _selectedGardenPlant
 
+    private val _treeDex = MutableStateFlow<List<DexEntry>>(emptyList())
+    val treeDex: StateFlow<List<DexEntry>> = _treeDex
+
     fun setView(view: AppView) {
         _currentView.value = view
+    }
+
+    fun setExplorerTab(tab: Int) {
+        _selectedExplorerTab.value = tab
     }
 
     fun navigateToTree(tree: StreetTree) {
@@ -259,6 +290,7 @@ class MainViewModel(
         val updatedGarden = listOf(newPlant) + _garden.value
         _garden.value = updatedGarden
         storageManager.saveGarden(updatedGarden)
+        updateDex()
         _currentView.value = AppView.Garden
     }
 
@@ -266,6 +298,7 @@ class MainViewModel(
         val updatedGarden = _garden.value.filter { it.id != id }
         _garden.value = updatedGarden
         storageManager.saveGarden(updatedGarden)
+        updateDex()
         if (_selectedGardenPlant.value?.id == id) { _selectedGardenPlant.value = null }
     }
 

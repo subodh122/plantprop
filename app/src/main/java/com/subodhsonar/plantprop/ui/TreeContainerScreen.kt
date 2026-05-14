@@ -19,8 +19,8 @@ import com.subodhsonar.plantprop.MainViewModel
 
 @Composable
 fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
-    var selectedTab by remember { mutableIntStateOf(initialTab) }
-    val tabs = listOf("SEARCH", "NEARBY")
+    val selectedTab by viewModel.selectedExplorerTab.collectAsState()
+    val tabs = listOf("SEARCH", "NEARBY", "TREEDEX")
 
     Scaffold(
         topBar = {
@@ -73,7 +73,7 @@ fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
                             Tab(
                                 selected = selectedTab == index,
                                 onClick = { 
-                                    selectedTab = index 
+                                    viewModel.setExplorerTab(index)
                                     if (index == 1) viewModel.searchTreesLive()
                                 },
                                 text = {
@@ -97,10 +97,10 @@ fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (selectedTab == 0) {
-                TreeSearchScreenContent(viewModel)
-            } else {
-                LiveTreesScreenContent(viewModel)
+            when (selectedTab) {
+                0 -> TreeSearchScreenContent(viewModel)
+                1 -> LiveTreesScreenContent(viewModel)
+                2 -> TreeDexScreenContent(viewModel)
             }
         }
     }

@@ -51,3 +51,11 @@ data class TreeLocation(
     val longitude: Double,
     val distanceMiles: Double
 )
+
+data class DexEntry(
+    val scientificName: String,
+    val commonName: String,
+    val isCollected: Boolean,
+    val count: Int,
+    val firstCollectedDate: String? = null
+)

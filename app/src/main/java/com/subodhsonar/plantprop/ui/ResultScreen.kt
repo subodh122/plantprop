@@ -48,6 +48,7 @@ fun ResultScreen(viewModel: MainViewModel) {
     val imageBytes by viewModel.capturedImageBytes.collectAsState()
     val referenceUrl by viewModel.referenceImageUrl.collectAsState()
     val selectedPlant by viewModel.selectedGardenPlant.collectAsState()
+    val garden by viewModel.garden.collectAsState()
     val error by viewModel.error.collectAsState()
 
     Scaffold(
@@ -114,12 +115,30 @@ fun ResultScreen(viewModel: MainViewModel) {
             result?.let { res ->
                 if (!isAnalyzing) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = res.commonName,
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = res.commonName,
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            
+                            val isCollected = garden.any { it.scientificName.equals(res.scientificName, ignoreCase = true) }
+                            Surface(
+                                color = if (isCollected) Color.White.copy(alpha = 0.1f) else Color(0xFF22C55E),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = if (isCollected) "COLLECTED" else "NEW!",
+                                    color = if (isCollected) Color.White.copy(alpha = 0.6f) else Color.Black,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                         Text(
                             text = res.scientificName,
                             style = MaterialTheme.typography.titleMedium,

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -152,7 +153,23 @@ fun LandingScreen(viewModel: MainViewModel) {
                 subtitle = stringResource(R.string.search_sf_subtitle),
                 icon = Icons.Default.Search,
                 primaryColor = Color(0xFF3B82F6),
-                onClick = { viewModel.setView(AppView.TreeSearch) }
+                onClick = { 
+                    viewModel.setExplorerTab(0)
+                    viewModel.setView(AppView.TreeSearch) 
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ModernLandingButton(
+                title = "SF TreeDex",
+                subtitle = "Track your city tree collection",
+                icon = Icons.Default.Star,
+                primaryColor = Color(0xFFA855F7),
+                onClick = { 
+                    viewModel.setExplorerTab(2)
+                    viewModel.setView(AppView.TreeSearch) 
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -165,6 +182,7 @@ fun LandingScreen(viewModel: MainViewModel) {
                 onClick = { 
                     val fineLoc = Manifest.permission.ACCESS_FINE_LOCATION
                     if (ContextCompat.checkSelfPermission(context, fineLoc) == PackageManager.PERMISSION_GRANTED) {
+                        viewModel.setExplorerTab(1)
                         viewModel.searchTreesLive()
                     } else {
                         locationPermissionLauncher.launch(arrayOf(fineLoc, Manifest.permission.ACCESS_COARSE_LOCATION))
