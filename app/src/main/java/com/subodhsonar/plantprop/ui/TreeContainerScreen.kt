@@ -20,7 +20,7 @@ import com.subodhsonar.plantprop.MainViewModel
 @Composable
 fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
     val selectedTab by viewModel.selectedExplorerTab.collectAsState()
-    val tabs = listOf("SEARCH", "NEARBY", "TREEDEX")
+    val tabs = listOf("SEARCH", "NEARBY")
 
     Scaffold(
         topBar = {
@@ -99,8 +99,7 @@ fun TreeContainerScreen(viewModel: MainViewModel, initialTab: Int = 0) {
         ) {
             when (selectedTab) {
                 0 -> TreeSearchScreenContent(viewModel)
-                1 -> LiveTreesScreenContent(viewModel)
-                2 -> TreeDexScreenContent(viewModel)
+                else -> LiveTreesScreenContent(viewModel)
             }
         }
     }

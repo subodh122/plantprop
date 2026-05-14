@@ -22,6 +22,7 @@ sealed class AppView {
     data object TreeSearch : AppView()
     data object LiveTrees : AppView()
     data object TreeDetail : AppView()
+    data object TreeDex : AppView()
 }
 
 class MainViewModel(

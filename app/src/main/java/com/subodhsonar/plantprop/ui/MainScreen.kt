@@ -31,6 +31,7 @@ fun MainScreen(viewModel: MainViewModel) {
             AppView.TreeSearch -> TreeSearchScreen(viewModel)
             AppView.LiveTrees -> LiveTreesScreen(viewModel)
             AppView.TreeDetail -> TreeDetailScreen(viewModel)
+            AppView.TreeDex -> TreeDexScreen(viewModel)
         }
 
         if (isProcessing) {

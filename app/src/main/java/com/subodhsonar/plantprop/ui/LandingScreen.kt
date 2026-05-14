@@ -167,8 +167,7 @@ fun LandingScreen(viewModel: MainViewModel) {
                 icon = Icons.Default.Star,
                 primaryColor = Color(0xFFA855F7),
                 onClick = { 
-                    viewModel.setExplorerTab(2)
-                    viewModel.setView(AppView.TreeSearch) 
+                    viewModel.setView(AppView.TreeDex)
                 }
             )
 

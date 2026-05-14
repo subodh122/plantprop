@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,8 +23,51 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.subodhsonar.plantprop.AppView
 import com.subodhsonar.plantprop.MainViewModel
 import com.subodhsonar.plantprop.model.DexEntry
+
+@Composable
+fun TreeDexScreen(viewModel: MainViewModel) {
+    Scaffold(
+        topBar = {
+            Surface(
+                color = Color(0xFF121212),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { viewModel.setView(AppView.Landing) }) {
+                        Icon(androidx.compose.material.icons.automirrored.filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                    Text(
+                        text = "SF TreeDex",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { viewModel.setView(AppView.Garden) },
+                        modifier = Modifier.background(Color.White.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(androidx.compose.material.icons.automirrored.filled.List, contentDescription = "Garden", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+            }
+        },
+        containerColor = Color(0xFF121212)
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            TreeDexScreenContent(viewModel)
+        }
+    }
+}
 
 @Composable
 fun TreeDexScreenContent(viewModel: MainViewModel) {
